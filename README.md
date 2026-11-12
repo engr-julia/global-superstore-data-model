@@ -62,8 +62,9 @@ product, place and time.
 ## How to Run
 
 1. Run `sql/01_create_oltp_schema.sql` in MySQL Workbench to create the `global_super_store` schema.
-2. Run `sql/04_create_star_schema.sql` to create the `global_super_store_dw` schema.
-3. Open `tableau/GlobalSuperStoreAnalysis.twb` in Tableau. When it cannot find the data source, relink it to `data/Global_Superstore_Orders.xlsx`.
+2. Run `sql/03_create_oltp_view.sql` to create the `OrderSummary` view (it needs sample rows in the tables to return results).
+3. Run `sql/04_create_star_schema.sql` to create the `global_super_store_dw` schema.
+4. Open `tableau/GlobalSuperStoreAnalysis.twb` in Tableau. When it cannot find the data source, relink it to `data/Global_Superstore_Orders.xlsx`.
 
 The Workbench models are in `models/` and can be opened with File > Open Model.
 
@@ -90,3 +91,4 @@ Filtered to California:
 - Tableau reads the Orders sheet directly, not the star schema.
 - FactSales has no Sales, Discount or Profit columns. These are available only in the Excel source.
 - A few sample rows were entered into the MySQL tables to test the view.
+
