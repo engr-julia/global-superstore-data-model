@@ -23,7 +23,7 @@ Workflow: Excel dataset -> normalized OLTP database -> star schema -> Tableau da
     sql/       MySQL scripts
     models/    MySQL Workbench models (.mwb)
     tableau/   Tableau workbook (.twb)
-    docs/      Diagrams and dashboard screenshots
+    docs/      Diagrams and dashboard screenshots (docs/images)
 
 ## Data Models
 
@@ -40,7 +40,7 @@ and Shipping, and Shipping links to DeliveryAddress.
 For example, customer details are stored once in Customers instead of
 being repeated on every order.
 
-![OLTP ERD](docs/images/oltp_erd.png)
+![OLTP ERD](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/oltp_erd.png)
 
 ### 2. Star schema
 
@@ -57,7 +57,7 @@ A State column was added to DimLocation so sales can be broken down by
 US state. There is no customer dimension because the analysis is by
 product, place and time.
 
-![Star schema ERD](docs/images/star_schema_erd.png)
+![Star schema ERD](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/star_schema_erd.png)
 
 ## How to Run
 
@@ -79,11 +79,19 @@ The Workbench models are in `models/` and can be opened with File > Open Model.
 All three views are set to filter the others, so clicking a state in any
 view updates the other two.
 
-![Dashboard](docs/images/dashboard.jpg)
+![Dashboard](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/dashboard.jpg)
 
 Filtered to California:
 
-![Filtered to California](docs/images/dashboard_filtered_california.jpg)
+![Filtered to California](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/dashboard_filtered_california.jpg)
+
+### Individual views
+
+![Sales in USA map](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/map_sales_usa.jpg)
+
+![USA Profits packed bubbles](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/bubble_usa_profits.jpg)
+
+![USA Sales Trends line chart](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/line_usa_sales_trends.jpg)
 
 ## Limitations
 
@@ -91,4 +99,3 @@ Filtered to California:
 - Tableau reads the Orders sheet directly, not the star schema.
 - FactSales has no Sales, Discount or Profit columns. These are available only in the Excel source.
 - A few sample rows were entered into the MySQL tables to test the view.
-
