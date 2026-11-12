@@ -1,101 +1,110 @@
 # Global Superstore Data Model
 
-A MySQL data modeling project: a normalized OLTP database, a star schema
-for analysis, and a Tableau dashboard of USA sales and profits.
+A MySQL data modeling and business intelligence project featuring a normalized 3NF OLTP database, a dimensional star schema for analytics, and an interactive Tableau dashboard analyzing USA sales and profitability.
 
-> **Data note:** The original Global Superstore file was not available, so
-> this project uses a synthetic dataset with the same columns (Orders sheet,
-> 5,100 rows, 2019-2022). All figures are illustrative, not real company
-> data. Some states have no sales for the same reason.
+> **Data Note:** Because the original Global Superstore file was unavailable, this project uses a synthetic dataset matching the original schema (`Orders` sheet, 5,100 rows, 2019–2022). All figures are illustrative rather than actual company performance, and certain US states have zero recorded sales as a result.
 
 ## Project Overview
 
-Workflow: Excel dataset -> normalized OLTP database -> star schema -> Tableau dashboard.
+**End-to-End Workflow:** Excel Dataset $\rightarrow$ Normalized OLTP Database $\rightarrow$ Dimensional Star Schema $\rightarrow$ Tableau Dashboard
 
-1. Designed a physical ER diagram in MySQL Workbench and deployed it to MySQL Server.
-2. Created an `OrderSummary` view joining all five tables.
-3. Designed a star schema for the marketing team's USA sales analysis.
-4. Built a three-view Tableau dashboard on the Orders data.
+1. **OLTP Modeling & Deployment:** Designed a physical Entity-Relationship Diagram (ERD) in MySQL Workbench and forward-engineered it to a live MySQL Server instance (`127.0.0.1:3306`).
+2. **Reporting View:** Created an `OrderSummary` SQL view joining all five normalized tables into a unified reporting layer.
+3. **Data Warehouse Design:** Modeled a star schema (`global_super_store_dw`) tailored for marketing analysis of USA sales by product, location, and time.
+4. **BI Visualization:** Built a three-view interactive Tableau dashboard on the Orders dataset with cross-filtering across all visuals.
 
 ## Repository Structure
 
-    data/      Excel dataset (synthetic)
-    sql/       MySQL scripts
-    models/    MySQL Workbench models (.mwb)
-    tableau/   Tableau workbook (.twb)
-    docs/      Diagrams and dashboard screenshots (docs/images)
+```text
+├── data/       # Synthetic Excel dataset (Global_Superstore_Orders.xlsx)
+├── sql/        # MySQL DDL scripts and view definitions
+├── models/     # MySQL Workbench model files (.mwb)
+├── tableau/    # Tableau workbook (.twb)
+└── docs/
+    └── images/ # ER diagrams, Workbench deployment screenshots, and dashboard visuals
+```
 
 ## Data Models
 
-### 1. OLTP schema (third normal form)
+### 1. OLTP Schema (Third Normal Form)
 
-Five tables: Customers, Products, DeliveryAddress, Shipping and Orders.
-Each table has a single primary key. Orders links to Customers, Products
-and Shipping, and Shipping links to DeliveryAddress.
+The transactional schema (`global_super_store`) is normalized to 3NF across five tables, each with a single primary key (`INT`):
 
-- **1NF:** every column holds one atomic value.
-- **2NF:** every non-key column depends on the whole key.
-- **3NF:** no non-key column depends on another non-key column.
+* **`Customers`** (`CustomerID`, `FullName`, `ContactNumber`, `Email`)
+* **`Products`** (`ProductID`, `ProductName`, `AmountInStock`, `Price`, `Category`, `Subcategory`)
+* **`DeliveryAddress`** (`AddressID`, `Street`, `PostCode`, `City`, `State`, `Country`)
+* **`Shipping`** (`ShipID`, `ShipDate`, `ShipMode`, `ShipCost`, `AddressID`) — links to `DeliveryAddress`
+* **`Orders`** (`OrderID`, `OrderDate`, `CustomerID`, `ProductID`, `ShipID`, `Quantity`, `Sales`, `Discount`, `Profit`, `TotalCost`, `OrderPriority`) — links to `Customers`, `Products`, and `Shipping`
 
-For example, customer details are stored once in Customers instead of
-being repeated on every order.
+**Normalization Applied:**
+* **1NF:** Every column stores a single atomic value.
+* **2NF:** Every non-key attribute depends on the entire primary key.
+* **3NF:** Transitive dependencies are eliminated (e.g., customer contact details are stored once in `Customers` and address details once in `DeliveryAddress` rather than repeated on every order).
 
-![OLTP ERD](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/oltp_erd.png)
+![OLTP ERD](docs/images/oltp_erd.png)
 
-### 2. Star schema
+### 2. Star Schema (`global_super_store_dw`)
 
-FactSales (price, cost, shipping, quantity) is linked by foreign keys to
-three dimensions:
+To support analytical queries by product, geography, and time, the dimensional model centers on a central fact table linked via foreign keys to three dimension tables:
 
-| Table | Columns |
-|-------|---------|
-| DimProducts | product name, category, subcategory, description |
-| DimLocation | continent, country, state, city |
-| DimTime | full date, year, quarter, month, day |
+* **`FactSales`**: `Price`, `Cost`, `Shipping`, `Quantity` (plus dimension foreign keys)
 
-A State column was added to DimLocation so sales can be broken down by
-US state. There is no customer dimension because the analysis is by
-product, place and time.
+| Dimension Table | Columns |
+| :--- | :--- |
+| **`DimProducts`** | `ProductName`, `Category`, `Subcategory`, `Description` |
+| **`DimLocation`** | `Continent`, `Country`, `State`, `City` |
+| **`DimTime`** | `FullDate`, `Year`, `Quarter`, `Month`, `Day` |
 
-![Star schema ERD](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/star_schema_erd.png)
+> **Design Decisions:** A `State` attribute was explicitly included in `DimLocation` to enable state-level US sales rollups. A customer dimension was intentionally omitted because the marketing analysis focuses strictly on product, place, and time performance.
+
+![Star Schema ERD](docs/images/star_schema_erd.png)
+
+## MySQL Implementation & Verification
+
+The physical EER diagram in MySQL Workbench was forward-engineered and deployed to MySQL Server:
+
+| Connection Setup | Forward Engineering Script | Successful Deployment |
+| :---: | :---: | :---: |
+| ![Implement the data model](docs/images/Implement%20the%20data%20model.jpg) | ![GlobalSuperStoreScript](docs/images/GlobalSuperStoreScript.jpg) | ![Forward Engineering Successful](docs/images/Forward%20Engineering%20Successful.jpg) |
+
+After deploying the schema, the `OrderSummary` view was created to denormalize `Orders`, `Customers`, `Products`, `Shipping`, and `DeliveryAddress` into a single queryable reporting interface:
+
+![View Script Execution](docs/images/View%20Script.jpg)
 
 ## How to Run
 
-1. Run `sql/01_create_oltp_schema.sql` in MySQL Workbench to create the `global_super_store` schema.
-2. Run `sql/03_create_oltp_view.sql` to create the `OrderSummary` view (it needs sample rows in the tables to return results).
-3. Run `sql/04_create_star_schema.sql` to create the `global_super_store_dw` schema.
-4. Open `tableau/GlobalSuperStoreAnalysis.twb` in Tableau. When it cannot find the data source, relink it to `data/Global_Superstore_Orders.xlsx`.
-
-The Workbench models are in `models/` and can be opened with File > Open Model.
+1. **Create the OLTP Schema:** Open and execute `sql/01_create_oltp_schema.sql` in MySQL Workbench to create the `global_super_store` database and tables. *(Alternatively, open the `.mwb` file in `models/` via **File > Open Model** and run **Database > Forward Engineer**.)*
+2. **Load Sample Data & Create View:** Insert sample records into the OLTP tables, then execute `sql/03_create_oltp_view.sql` to create and test the `OrderSummary` view.
+3. **Create the Star Schema:** Execute `sql/04_create_star_schema.sql` to deploy the `global_super_store_dw` dimensional tables.
+4. **Open the Tableau Workbook:** Open `tableau/GlobalSuperStoreAnalysis.twb` in Tableau Desktop. When prompted for the data source, relink it to `data/Global_Superstore_Orders.xlsx`.
 
 ## Tableau Dashboard: USA Sales and Profits
 
-| View | Description |
-|------|-------------|
-| Sales in USA (map) | Map of US states colored and labeled by Sales. The tooltip shows state, country and sales. |
-| USA Profits (packed bubbles) | Bubble size shows Profit per state. The tooltip adds Quantity and Shipping Cost. Four states show as "negative" because they had a loss. |
-| USA Sales Trends (line chart) | Yearly Sales by state, 2019-2022, limited to states with total sales of at least 40,000. |
+All three views are configured with interactive filter actions—selecting any state in one chart dynamically filters the remaining two views.
 
-All three views are set to filter the others, so clicking a state in any
-view updates the other two.
+| View | Visual Type | Description & Metrics |
+| :--- | :--- | :--- |
+| **Sales in USA** | Filled Map | US states colored and labeled by total `Sales`. Tooltips display `State`, `Country`, and `Sales`. |
+| **USA Profits** | Packed Bubbles | Bubble size encodes `Profit` per state. Tooltips add `Quantity` and `Shipping Cost`. Four states are highlighted as negative due to net losses. |
+| **USA Sales Trends** | Line Chart | Annual `Sales` trajectory (2019–2022) by state, filtered to states with cumulative sales of at least `$40,000`. |
 
-![Dashboard](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/dashboard.jpg)
+![Dashboard](docs/images/dashboard.jpg)
 
-Filtered to California:
+### Filtered View: California
 
-![Filtered to California](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/dashboard_filtered_california.jpg)
+Clicking **California** cross-filters the map, profit bubble, and 2019–2022 trend line to isolate state-level performance:
 
-### Individual views
+![Filtered to California](docs/images/dashboard_filtered_california.jpg)
 
-![Sales in USA map](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/map_sales_usa.jpg)
+### Individual Views
 
-![USA Profits packed bubbles](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/bubble_usa_profits.jpg)
+| Sales in USA (Map) | USA Profits (Packed Bubbles) | USA Sales Trends (Line Chart) |
+| :---: | :---: | :---: |
+| ![Sales in USA map](docs/images/map_sales_usa.jpg) | ![USA Profits packed bubbles](docs/images/bubble_usa_profits.jpg) | ![USA Sales Trends line chart](docs/images/line_usa_sales_trends.jpg) |
 
-![USA Sales Trends line chart](https://raw.githubusercontent.com/engr-julia/global-superstore-data-model/main/docs/images/line_usa_sales_trends.jpg)
+## Limitations & Future Improvements
 
-## Limitations
-
-- The data is synthetic, so the results are illustrative only.
-- Tableau reads the Orders sheet directly, not the star schema.
-- FactSales has no Sales, Discount or Profit columns. These are available only in the Excel source.
-- A few sample rows were entered into the MySQL tables to test the view.
+* **Synthetic Data:** Metrics and state-level distributions are illustrative and do not reflect real-world retail performance.
+* **Direct Excel Connection:** Tableau currently connects directly to the `Orders` Excel sheet rather than querying the MySQL `global_super_store_dw` star schema.
+* **Fact Table Metrics:** `FactSales` captures base measures (`Price`, `Cost`, `Shipping`, `Quantity`) and does not yet store derived or transactional fields (`Sales`, `Discount`, `Profit`), which currently reside only in the OLTP `Orders` table and Excel source.
+* **ETL Pipeline:** Only sample rows were loaded into MySQL to verify the `OrderSummary` view; building an automated Python/SQL ETL pipeline to load all 5,100 rows from Excel into OLTP and populate the star schema is a natural next step.
